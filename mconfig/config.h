@@ -120,8 +120,6 @@ public:
 class Option : public SectionEntry
 {
 private:
-    Ref<String> value_str;
-
     typedef IntrusiveList<Value> ValueList;
 
     ValueList value_list;
