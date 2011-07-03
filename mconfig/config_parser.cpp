@@ -189,7 +189,10 @@ mconfig_begin_section (MConfig_Section       * const section,
 
     logD_ (_func, "section: ", section_name);
 
-    Section *opts_section = self->sections.getLast()->getSection (section_name->mem());
+// Section value replacement was disabled to allow lists of sections
+// with the same name (for Moment's mod_file).
+//  Section *opts_section = self->sections.getLast()->getSection (section_name->mem());
+    Section *opts_section = NULL;
     if (!opts_section) {
 	opts_section = new Section (keyToString (section->name)->mem());
 	self->sections.getLast()->addSection (opts_section);
