@@ -39,7 +39,7 @@ section-body:
     section-entry_opt_seq
 
 section:
-    <name> key [{] /mconfig_begin_section/ section-body [}]
+    <name> key_opt [{] /mconfig_begin_section/ section-body [}]
 
 *:
     section-entry_opt_seq

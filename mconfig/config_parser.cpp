@@ -172,6 +172,9 @@ wordsToString (MyCpp::List<MConfig_Word*> * const mt_nonnull words)
 static Ref<String>
 keyToString (MConfig_Key * const key)
 {
+    if (!key)
+	return grab (new String());
+
     return wordsToString (&key->words);
 }
 
