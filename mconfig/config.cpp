@@ -26,6 +26,10 @@ using namespace M;
 
 namespace MConfig {
 
+namespace {
+LogGroup libMary_logGroup_mconfig_use ("mconfig_use", LogLevel::N);
+}
+
 Result
 Value::getAsDouble (double * const ret_val)
 {
@@ -121,7 +125,7 @@ Section::getSectionEntry (ConstMemory const &path_,
 			  bool        const create,
 			  SectionEntry::Type const section_entry_type)
 {
-    logD_ (_func, path_);
+    logD (mconfig_use, _func, path_);
 
     ConstMemory path = path_;
     while (path.len() > 0 && path.mem() [0] == '/')
@@ -282,8 +286,10 @@ Config::BooleanValue
 Config::getBoolean (ConstMemory  const &path)
 {
     ConstMemory const value_mem = getString (path);
-    if (value_mem.len() == 0)
+    if (value_mem.len() == 0) {
+	logD (mconfig_use, _func, "DEFAULT");
 	return Boolean_Default;
+    }
 
     Ref<String> value_str = grab (new String (value_mem));
     Memory const mem = value_str->mem();
@@ -296,6 +302,7 @@ Config::getBoolean (ConstMemory  const &path)
 	equal (mem, "true") ||
 	equal (mem, "1"))
     {
+	logD (mconfig_use, _func, "TRUE");
 	return Boolean_True;
     }
 
@@ -305,9 +312,11 @@ Config::getBoolean (ConstMemory  const &path)
 	equal (mem, "false") ||
 	equal (mem, "0"))
     {
+	logD (mconfig_use, _func, "FALSE");
 	return Boolean_False;
     }
 
+    logD (mconfig_use, _func, "INVALID");
     return Boolean_Invalid;
 }
 

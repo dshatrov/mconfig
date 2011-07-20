@@ -39,6 +39,10 @@ using namespace M;
 
 namespace MConfig {
 
+namespace {
+LogGroup libMary_logGroup_mconfig ("mconfig", LogLevel::N);
+}
+
 class ConfigParser
 {
 public:
@@ -62,7 +66,7 @@ mconfig_word_token_match_func (MyCpp::ConstMemoryDesc const &token_mem,
 			       void * const /* token_user_ptr */,
 			       void * const /* user_data */)
 {
-    logD_ (_func, ConstMemory (token_mem));
+    logD (mconfig, _func, ConstMemory (token_mem));
 
     if (token_mem.getLength() == 0)
 	return false;
@@ -133,7 +137,7 @@ wordsToString (MyCpp::List<MConfig_Word*> * const mt_nonnull words)
 	}
     }
 
-    logD_ (_func, "str_len: ", str_len);
+    logD (mconfig, _func, "str_len: ", str_len);
 
     Ref<String> str = grab (new String (str_len));
 
@@ -145,7 +149,7 @@ wordsToString (MyCpp::List<MConfig_Word*> * const mt_nonnull words)
 	    MConfig_Word * const word_ = iter.next();
 
 	    ConstMemory word = word_->any_token->token;
-	    logD_ (_func, "word: ", word);
+	    logD (mconfig, _func, "word: ", word);
 	    // Stripping quotes from string literals.
 	    if (word.len() && word.mem() [0] == '"') {
 		assert (word.len() >= 2);
@@ -164,7 +168,7 @@ wordsToString (MyCpp::List<MConfig_Word*> * const mt_nonnull words)
 	}
     }
 
-    logD_ (_func, "str: ", str);
+    logD (mconfig, _func, "str: ", str);
 
     return str;
 }
@@ -187,7 +191,7 @@ mconfig_begin_section (MConfig_Section       * const section,
 
     Ref<String> section_name = keyToString (section->name);
 
-    logD_ (_func, "section: ", section_name);
+    logD (mconfig, _func, "section: ", section_name);
 
 // Section value replacement was disabled to allow lists of sections
 // with the same name (for Moment's mod_file).
@@ -215,7 +219,7 @@ mconfig_accept_option (MConfig_Option         * const option,
     ConfigParser * const self = static_cast <ConfigParser*> (_self);
 
     if (self->sections.isEmpty()) {
-	logE_ (_func, "option not within any section");
+	logE_ (_func, "option not within a section");
 	return false;
     }
 
@@ -239,7 +243,7 @@ mconfig_accept_option (MConfig_Option         * const option,
 
     Ref<String> key = keyToString (key_elem);
 
-    logD_ (_func, "option: ", key);
+    logD (mconfig, _func, "option: ", key);
 
     Option *opts_option = section->getOption (key->mem());
     if (opts_option) {
@@ -255,14 +259,14 @@ mconfig_accept_option (MConfig_Option         * const option,
 	    switch (value->value_type) {
 		case MConfig_Value::_List: {
 		    MConfig_Value_List * const value__list = static_cast <MConfig_Value_List*> (value);
-		    logD_ (_func, "value: ", wordsToString (&value__list->words));
+		    logD (mconfig, _func, "value: ", wordsToString (&value__list->words));
 		    opts_option->addValue (wordsToString (&value__list->words)->mem());
 		    value = value__list->value;
-		    logD_ (_func, "new value: 0x", fmt_hex, (UintPtr) value);
+		    logD (mconfig, _func, "new value: 0x", fmt_hex, (UintPtr) value);
 		} break;
 		case MConfig_Value::_Word: {
 		    MConfig_Value_Word * const value__word = static_cast <MConfig_Value_Word*> (value);
-		    logD_ (_func, "value: ", wordsToString (&value__word->words));
+		    logD (mconfig, _func, "value: ", wordsToString (&value__word->words));
 		    opts_option->addValue (wordsToString (&value__word->words)->mem());
 		    value = NULL;
 		} break;
@@ -275,7 +279,7 @@ mconfig_accept_option (MConfig_Option         * const option,
 	}
     }
 
-    logD_ (_func, "done");
+    logD (mconfig, _func, "done");
 
     return true;
 }
@@ -283,7 +287,7 @@ mconfig_accept_option (MConfig_Option         * const option,
 Result parseConfig (ConstMemory const &filename,
 		    Config * const config)
 try {
-    MyCpp::Ref<Pargen::Grammar> grammar = create_mconfig_grammar ();
+    MyCpp::Ref<Pargen::Grammar> const grammar = create_mconfig_grammar ();
 
     MyCpp::Ref<MyCpp::File> file = MyCpp::File::createDefault (filename,
 							       0 /* open_flags */,
@@ -320,16 +324,18 @@ try {
     if (mconfig_elem == NULL ||
 	token_stream->getNextToken ().getLength () > 0)
     {
-	logE_ (_func, "EOF not reached");
+	logE_ (_func, "Syntax error in configuration file ", filename);
 	return Result::Failure;
     }
 
-    dump_mconfig_grammar (static_cast <MConfig_Grammar*> (mconfig_elem));
-    MyCpp::errf->pflush ();
+    if (logLevelOn (mconfig, LogLevel::Debug)) {
+	dump_mconfig_grammar (static_cast <MConfig_Grammar*> (mconfig_elem));
+	MyCpp::errf->pflush ();
+    }
 
     return Result::Success;
 } catch (...) {
-    logE_ (_func, "exception");
+    logE_ (_func, "Exception");
     return Result::Failure;
 }
 
