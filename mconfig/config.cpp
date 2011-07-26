@@ -253,16 +253,35 @@ Config::setOption (ConstMemory const &path,
 }
 
 ConstMemory
-Config::getString (ConstMemory const &path)
+Config::getString (ConstMemory const &path,
+		   bool * const ret_is_set)
 {
-    Option * const option = getOption (path, true /* create */);
+    Option * const option = getOption (path, false /* create */);
     if (!option
 	|| !option->getValue())
     {
+	if (ret_is_set)
+	    *ret_is_set = false;
+
 	return ConstMemory ();
     }
 
+    if (ret_is_set)
+	*ret_is_set = true;
+
     return option->getValue()->mem();
+}
+
+ConstMemory
+Config::getString_default (ConstMemory const &path,
+			   ConstMemory const &default_value)
+{
+    bool is_set;
+    ConstMemory const str = getString (path, &is_set);
+    if (is_set)
+	return str;
+
+    return default_value;
 }
 
 GetResult

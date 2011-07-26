@@ -340,17 +340,11 @@ public:
     Option* setOption (ConstMemory const &path,
 		       ConstMemory const &value);
 
-    ConstMemory getString (ConstMemory const &path);
+    ConstMemory getString (ConstMemory const &path,
+			   bool *ret_is_set = NULL);
 
     ConstMemory getString_default (ConstMemory const &path,
-				   ConstMemory const &default_value)
-    {
-	ConstMemory const str = getString (path);
-	if (str.len() == 0) {
-	    return default_value;
-	}
-	return str;
-    }
+				   ConstMemory const &default_value);
 
     GetResult getUint64 (ConstMemory const &path,
 			 Uint64 *ret_value);
