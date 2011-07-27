@@ -233,6 +233,25 @@ Section::getSection_nopath (ConstMemory const &section_name,
     return static_cast <Section*> (section_entry);
 }
 
+void
+Section::addOption (Option * const option)
+{
+    section_entry_hash.add (option);
+}
+
+void
+Section::addSection (Section * const section)
+{
+    section_entry_hash.add (section);
+}
+
+void
+Section::removeSectionEntry (SectionEntry * const section_entry)
+{
+    section_entry_hash.remove (section_entry);
+    delete section_entry;
+}
+
 Section::~Section ()
 {
     SectionEntryHash::iter iter (section_entry_hash);

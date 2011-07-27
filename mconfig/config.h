@@ -236,22 +236,12 @@ public:
 				bool create = false);
 
     // Takes ownership of @option.
-    void addOption (Option * const option)
-    {
-	section_entry_hash.add (option);
-    }
+    void addOption (Option *option);
 
     // Takes ownership of @section.
-    void addSection (Section * const section)
-    {
-	section_entry_hash.add (section);
-    }
+    void addSection (Section *section);
 
-    void removeSectionEntry (SectionEntry * const section_entry)
-    {
-	section_entry_hash.remove (section_entry);
-	delete section_entry;
-    }
+    void removeSectionEntry (SectionEntry *section_entry);
 
     void dump (OutputStream *outs,
 	       unsigned      nest_level = 0);
