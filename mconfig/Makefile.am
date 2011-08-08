@@ -1,10 +1,7 @@
 COMMON_CFLAGS =				\
-	-D_POSIX_C_SOURCE=199309L	\
-	-D_XOPEN_SOURCE=600		\
 	-ggdb				\
 	-Wno-long-long -Wall -Wextra	\
 	$(THIS_CFLAGS)
-# -pedantic
 
 COMMON_CFLAGS += -DLIBMARY_MTSAFE -DLIBMARY_TLOCAL=__thread
 
@@ -15,15 +12,8 @@ else
     COMMON_CFLAGS += -rdynamic -pthread
 endif
 
-AM_CFLAGS = -std=c99 $(COMMON_CFLAGS)
+AM_CFLAGS = -std=gnu99 $(COMMON_CFLAGS)
 AM_CXXFLAGS = -std=c++0x $(COMMON_CFLAGS)
-
-if PLATFORM_WIN32
-else
-# <fstream> doesn't work in strict ANSI mode with MinGW.
-# Upd: Variadic macros produce warnings with -ansi.
-#AM_CXXFLAGS += -std=c++98 -ansi
-endif
 
 INCLUDES = -I$(top_srcdir)
 
