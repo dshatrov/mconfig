@@ -37,7 +37,7 @@ BUILT_SOURCES = mconfig_pargen.h
 CLEANFILES = $(MCONFIG_GENFILES)
 
 mconfig_pargen.h mconfig_pargen.cpp: mconfig.par
-	pargen --extmode --module-name MConfig --header-name mconfig $^
+	pargen --extmode --module-name MConfig --header-name mconfig mconfig.par
 
 mconfigincludedir = $(includedir)/mconfig-1.0/mconfig
 mconfiginclude_HEADERS =	\
