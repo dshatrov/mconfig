@@ -274,6 +274,15 @@ public:
 	    : iter_ (section.section_entry_hash)
 	{
 	}
+
+ 	// Methods for C API binding.
+	void *getAsVoidPtr () const { return iter_.getAsVoidPtr(); }
+	static iter fromVoidPtr (void *ptr)
+	{
+	    iter it;
+	    it.iter_ = SectionEntryHash::iter::fromVoidPtr (ptr);
+	    return it;
+	}
     };
 
     void iter_begin (iter &iter)
