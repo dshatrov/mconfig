@@ -286,12 +286,15 @@ mconfig_accept_option (MConfig_Option         * const option,
 
 Result parseConfig (ConstMemory const &filename,
 		    Config * const config)
+{
+    MyCpp::Ref<MyCpp::File> file;
+
 try {
     MyCpp::Ref<Pargen::Grammar> const grammar = create_mconfig_grammar ();
 
-    MyCpp::Ref<MyCpp::File> file = MyCpp::File::createDefault (filename,
-							       0 /* open_flags */,
-							       MyCpp::AccessMode::ReadOnly);
+    file = MyCpp::File::createDefault (filename,
+				       0 /* open_flags */,
+				       MyCpp::AccessMode::ReadOnly);
     file = MyCpp::grab (new MyCpp::CachedFile (file, (1 << 14) /* page_size */, 64 /* max_pages */));
 
     MyCpp::Ref<Scruffy::CppPreprocessor> const preprocessor = MyCpp::grab (new Scruffy::CppPreprocessor (file));
@@ -321,6 +324,8 @@ try {
 		   Pargen::createParserConfig (false /* upwards_jumps */),
 		   false /* debug_dump */);
 
+    file->close (true /* flush_data */);
+
     if (mconfig_elem == NULL ||
 	token_stream->getNextToken ().getLength () > 0)
     {
@@ -336,7 +341,16 @@ try {
     return Result::Success;
 } catch (...) {
     logE_ (_func, "Exception");
+
+    if (file) {
+	try {
+	    file->close (true /* flush_data */);
+	} catch (...) {
+	}
+    }
+
     return Result::Failure;
+}
 }
 
 }
