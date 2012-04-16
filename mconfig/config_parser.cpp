@@ -229,11 +229,11 @@ mconfig_accept_option (MConfig_Option         * const option,
 
     MConfig_Key *key_elem = NULL;
     switch (option->option_type) {
-	case MConfig_Option::_KeyValue: {
+	case MConfig_Option::t_KeyValue: {
 	    option__key_value = static_cast <MConfig_Option_KeyValue*> (option);
 	    key_elem = option__key_value->key;
 	} break;
-	case MConfig_Option::_Key: {
+	case MConfig_Option::t_Key: {
 	    MConfig_Option_Key * const option__key = static_cast <MConfig_Option_Key*> (option);
 	    key_elem = option__key->key;
 	} break;
@@ -257,14 +257,14 @@ mconfig_accept_option (MConfig_Option         * const option,
 	MConfig_Value *value = option__key_value->value;
 	for (;;) {
 	    switch (value->value_type) {
-		case MConfig_Value::_List: {
+		case MConfig_Value::t_List: {
 		    MConfig_Value_List * const value__list = static_cast <MConfig_Value_List*> (value);
 		    logD (mconfig, _func, "value: ", wordsToString (&value__list->words));
 		    opts_option->addValue (wordsToString (&value__list->words)->mem());
 		    value = value__list->value;
 		    logD (mconfig, _func, "new value: 0x", fmt_hex, (UintPtr) value);
 		} break;
-		case MConfig_Value::_Word: {
+		case MConfig_Value::t_Word: {
 		    MConfig_Value_Word * const value__word = static_cast <MConfig_Value_Word*> (value);
 		    logD (mconfig, _func, "value: ", wordsToString (&value__word->words));
 		    opts_option->addValue (wordsToString (&value__word->words)->mem());
