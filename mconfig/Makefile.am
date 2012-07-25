@@ -3,13 +3,10 @@ COMMON_CFLAGS =				\
 	-Wno-long-long -Wall -Wextra	\
 	$(THIS_CFLAGS)
 
-COMMON_CFLAGS += -DLIBMARY_MTSAFE -DLIBMARY_TLOCAL=__thread
-
-if PLATFORM_WIN32
-    COMMON_CFLAGS += -DPLATFORM_WIN32
-else
+if !PLATFORM_WIN32
+    COMMON_CFLAGS += -pthread
     # For backtraces
-    COMMON_CFLAGS += -rdynamic -pthread
+    COMMON_CFLAGS += -rdynamic
 endif
 
 AM_CFLAGS = -std=gnu99 $(COMMON_CFLAGS)
