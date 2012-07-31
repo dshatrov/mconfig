@@ -28,6 +28,13 @@ namespace MConfig {
 
 using namespace M;
 
+enum BooleanValue {
+    Boolean_Invalid,
+    Boolean_Default,
+    Boolean_True,
+    Boolean_False
+};
+
 class SectionEntry : public HashEntry<>
 {
     friend class Section;
@@ -57,8 +64,8 @@ public:
 	return name_str->mem();
     }
 
-    SectionEntry (Type const type,
-		  ConstMemory const &entry_name)
+    SectionEntry (Type        const type,
+		  ConstMemory const entry_name)
 	: type (type)
     {
 	name_str = grab (new String (entry_name));
@@ -89,7 +96,7 @@ private:
     } cached_value;
 
 public:
-    void setValue (ConstMemory const &mem)
+    void setValue (ConstMemory const mem)
     {
 	value_str = grab (new String (mem));
     }
@@ -125,7 +132,7 @@ private:
     ValueList value_list;
 
 public:
-    void addValue (ConstMemory const &mem)
+    void addValue (ConstMemory const mem)
     {
 	Value * const value = new Value;
 	value->setValue (mem);
@@ -150,10 +157,12 @@ public:
 	return value_list.getFirst();
     }
 
+    BooleanValue getBoolean ();
+
     void dump (OutputStream *outs,
 	       unsigned      nest_level);
 
-    Option (ConstMemory const &option_name)
+    Option (ConstMemory const option_name)
 	: SectionEntry (SectionEntry::Type_Option, option_name)
     {
     }
@@ -217,22 +226,22 @@ private:
     SectionEntryHash section_entry_hash;
 
 public:
-    SectionEntry* getSectionEntry (ConstMemory const &path,
+    SectionEntry* getSectionEntry (ConstMemory path,
 				   bool create = false,
 				   SectionEntry::Type section_entry_type = SectionEntry::Type_Invalid);
 
-    Option* getOption (ConstMemory const &path,
+    Option* getOption (ConstMemory path,
 		       bool create = false);
 
-    Section* getSection (ConstMemory const &path,
+    Section* getSection (ConstMemory path,
 			 bool create = false);
 
-    SectionEntry* getSectionEntry_nopath (ConstMemory const &section_entry_name);
+    SectionEntry* getSectionEntry_nopath (ConstMemory section_entry_name);
 
-    Option* getOption_nopath (ConstMemory const &option_name,
+    Option* getOption_nopath (ConstMemory option_name,
 			      bool create = false);
 
-    Section* getSection_nopath (ConstMemory const &section_name,
+    Section* getSection_nopath (ConstMemory section_name,
 				bool create = false);
 
     // Takes ownership of @option.
@@ -249,7 +258,7 @@ public:
     void dumpBody (OutputStream *outs,
 		   unsigned      nest_level = 0);
 
-    Section (ConstMemory const &section_name)
+    Section (ConstMemory const section_name)
 	: SectionEntry (SectionEntry::Type_Section, section_name)
     {
     }
@@ -323,34 +332,34 @@ private:
 
 public:
     // Helper method to avoid excessive explicit calls to getRootSection().
-    Option* getOption (ConstMemory const &path,
-		       bool const create = false)
+    Option* getOption (ConstMemory const path,
+		       bool        const create = false)
     {
 	return root_section.getOption (path, create);
     }
 
     // Helper method to avoid excessive explicit calls to getRootSection().
-    Section* getSection (ConstMemory const &path,
-			 bool const create = false)
+    Section* getSection (ConstMemory const path,
+			 bool        const create = false)
     {
 	return root_section.getSection (path, create);
     }
 
-    Option* setOption (ConstMemory const &path,
-		       ConstMemory const &value);
+    Option* setOption (ConstMemory path,
+		       ConstMemory value);
 
-    ConstMemory getString (ConstMemory const &path,
-			   bool *ret_is_set = NULL);
+    ConstMemory getString (ConstMemory  path,
+			   bool        *ret_is_set = NULL);
 
-    ConstMemory getString_default (ConstMemory const &path,
-				   ConstMemory const &default_value);
+    ConstMemory getString_default (ConstMemory path,
+				   ConstMemory default_value);
 
-    GetResult getUint64 (ConstMemory const &path,
-			 Uint64 *ret_value);
+    GetResult getUint64 (ConstMemory  path,
+			 Uint64      *ret_value);
 
-    GetResult getUint64_default (ConstMemory const &path,
-				 Uint64 * const ret_value,
-				 Uint64   const default_value)
+    GetResult getUint64_default (ConstMemory   const path,
+				 Uint64      * const ret_value,
+				 Uint64        const default_value)
     {
 	GetResult const res = getUint64 (path, ret_value);
 	if (res == GetResult::Default) {
@@ -362,14 +371,7 @@ public:
 	return res;
     }
 
-    enum BooleanValue {
-	Boolean_Invalid,
-	Boolean_Default,
-	Boolean_True,
-	Boolean_False
-    };
-
-    BooleanValue getBoolean (ConstMemory const &path);
+    BooleanValue getBoolean (ConstMemory path);
 
     Section* getRootSection ()
     {

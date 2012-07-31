@@ -27,7 +27,7 @@ using namespace M;
 namespace MConfig {
 
 namespace {
-LogGroup libMary_logGroup_mconfig_use ("mconfig_use", LogLevel::N);
+LogGroup libMary_logGroup_mconfig ("mconfig", LogLevel::I);
 }
 
 Result
@@ -120,13 +120,47 @@ Value::getAsUint64 (Uint64 * const ret_val)
     return Result::Success;
 }
 
+BooleanValue
+Option::getBoolean ()
+{
+    ConstMemory value_mem;
+    if (getValue())
+        value_mem = getValue()->mem();
+
+    if (value_mem.len() == 0)
+	return Boolean_Default;
+
+    Ref<String> value_str = grab (new String (value_mem));
+    Memory const mem = value_str->mem();
+    for (Size i = 0; i < mem.len(); ++i)
+	mem.mem() [i] = (Byte) tolower (mem.mem() [i]);
+
+    if (equal (mem, "y")    ||
+	equal (mem, "yes")  ||
+	equal (mem, "on")   ||
+	equal (mem, "true") ||
+	equal (mem, "1"))
+    {
+	return Boolean_True;
+    }
+
+    if (equal (mem, "n")     ||
+	equal (mem, "no")    ||
+	equal (mem, "off")   ||
+	equal (mem, "false") ||
+	equal (mem, "0"))
+    {
+	return Boolean_False;
+    }
+
+    return Boolean_Invalid;
+}
+
 SectionEntry*
-Section::getSectionEntry (ConstMemory const &path_,
+Section::getSectionEntry (ConstMemory const path_,
 			  bool        const create,
 			  SectionEntry::Type const section_entry_type)
 {
-    logD (mconfig_use, _func, path_);
-
     ConstMemory path = path_;
     while (path.len() > 0 && path.mem() [0] == '/')
 	path = path.region (1);
@@ -154,8 +188,8 @@ Section::getSectionEntry (ConstMemory const &path_,
 }
 
 Option*
-Section::getOption (ConstMemory const &path,
-		    bool        const  create)
+Section::getOption (ConstMemory const path,
+		    bool        const create)
 {
     SectionEntry * const section_entry = getSectionEntry (path, create, SectionEntry::Type_Option);
     if (!section_entry ||
@@ -168,8 +202,8 @@ Section::getOption (ConstMemory const &path,
 }
 
 Section*
-Section::getSection (ConstMemory const &path,
-		     bool        const  create)
+Section::getSection (ConstMemory const path,
+		     bool        const create)
 {
     SectionEntry * const section_entry = getSectionEntry (path, create, SectionEntry::Type_Section);
     if (!section_entry ||
@@ -182,14 +216,14 @@ Section::getSection (ConstMemory const &path,
 }
 
 SectionEntry*
-Section::getSectionEntry_nopath (ConstMemory const &section_entry_name)
+Section::getSectionEntry_nopath (ConstMemory const section_entry_name)
 {
     return section_entry_hash.lookup (section_entry_name);
 }
 
 Option*
-Section::getOption_nopath (ConstMemory const &option_name,
-			   bool const create)
+Section::getOption_nopath (ConstMemory const option_name,
+			   bool        const create)
 {
     SectionEntry * const section_entry = section_entry_hash.lookup (option_name);
     if (!section_entry ||
@@ -211,8 +245,8 @@ Section::getOption_nopath (ConstMemory const &option_name,
 }
 
 Section*
-Section::getSection_nopath (ConstMemory const &section_name,
-			    bool const create)
+Section::getSection_nopath (ConstMemory const section_name,
+			    bool        const create)
 {
     SectionEntry * const section_entry = section_entry_hash.lookup (section_name);
     if (!section_entry ||
@@ -262,8 +296,8 @@ Section::~Section ()
 }
 
 Option*
-Config::setOption (ConstMemory const &path,
-		   ConstMemory const &value)
+Config::setOption (ConstMemory const path,
+		   ConstMemory const value)
 {
     Option * const option = getOption (path, true /* create */);
     option->removeValues ();
@@ -272,8 +306,8 @@ Config::setOption (ConstMemory const &path,
 }
 
 ConstMemory
-Config::getString (ConstMemory const &path,
-		   bool * const ret_is_set)
+Config::getString (ConstMemory   const path,
+		   bool        * const ret_is_set)
 {
     Option * const option = getOption (path, false /* create */);
     if (!option
@@ -292,8 +326,8 @@ Config::getString (ConstMemory const &path,
 }
 
 ConstMemory
-Config::getString_default (ConstMemory const &path,
-			   ConstMemory const &default_value)
+Config::getString_default (ConstMemory const path,
+			   ConstMemory const default_value)
 {
     bool is_set;
     ConstMemory const str = getString (path, &is_set);
@@ -304,8 +338,8 @@ Config::getString_default (ConstMemory const &path,
 }
 
 GetResult
-Config::getUint64 (ConstMemory const &path,
-		   Uint64 * const ret_value)
+Config::getUint64 (ConstMemory   const path,
+		   Uint64      * const ret_value)
 {
     ConstMemory const value_mem = getString (path);
     if (value_mem.len() == 0)
@@ -320,42 +354,14 @@ Config::getUint64 (ConstMemory const &path,
     return GetResult::Success;
 }
 
-Config::BooleanValue
-Config::getBoolean (ConstMemory  const &path)
+BooleanValue
+Config::getBoolean (ConstMemory const path)
 {
-    ConstMemory const value_mem = getString (path);
-    if (value_mem.len() == 0) {
-	logD (mconfig_use, _func, "DEFAULT");
+    Option * const option = getOption (path, false /* create */);
+    if (!option)
 	return Boolean_Default;
-    }
 
-    Ref<String> value_str = grab (new String (value_mem));
-    Memory const mem = value_str->mem();
-    for (Size i = 0; i < mem.len(); ++i)
-	mem.mem() [i] = (Byte) tolower (mem.mem() [i]);
-
-    if (equal (mem, "y")    ||
-	equal (mem, "yes")  ||
-	equal (mem, "on")   ||
-	equal (mem, "true") ||
-	equal (mem, "1"))
-    {
-	logD (mconfig_use, _func, "TRUE");
-	return Boolean_True;
-    }
-
-    if (equal (mem, "n")     ||
-	equal (mem, "no")    ||
-	equal (mem, "off")   ||
-	equal (mem, "false") ||
-	equal (mem, "0"))
-    {
-	logD (mconfig_use, _func, "FALSE");
-	return Boolean_False;
-    }
-
-    logD (mconfig_use, _func, "INVALID");
-    return Boolean_Invalid;
+    return option->getBoolean ();
 }
 
 
