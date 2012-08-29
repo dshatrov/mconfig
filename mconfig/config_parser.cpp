@@ -287,6 +287,8 @@ mconfig_accept_option (MConfig_Option         * const option,
 Result parseConfig (ConstMemory const &filename,
 		    Config * const config)
 {
+    logD_ (_func, "filename: ", filename);
+
     MyCpp::Ref<MyCpp::File> file;
 
 try {
