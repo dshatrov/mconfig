@@ -1,6 +1,6 @@
-COMMON_CFLAGS =				\
-	-ggdb				\
-	-Wno-long-long -Wall -Wextra	\
+COMMON_CFLAGS =			\
+	-ggdb			\
+	-Wno-long-long -Wall    \
 	$(THIS_CFLAGS)
 
 if !PLATFORM_WIN32
@@ -9,10 +9,10 @@ if !PLATFORM_WIN32
     COMMON_CFLAGS += -rdynamic
 endif
 
-AM_CFLAGS = -std=gnu99 $(COMMON_CFLAGS)
-AM_CXXFLAGS = -std=c++0x $(COMMON_CFLAGS)
+AM_CFLAGS   += -std=gnu99 $(COMMON_CFLAGS)
+AM_CXXFLAGS += $(COMMON_CFLAGS)
 
-INCLUDES = -I$(top_srcdir)
+INCLUDES = -I$(top_srcdir) -I$(top_builddir)
 
 mconfig_private_headers =
 
@@ -34,7 +34,7 @@ BUILT_SOURCES = mconfig_pargen.h
 CLEANFILES = $(MCONFIG_GENFILES)
 
 mconfig_pargen.h mconfig_pargen.cpp: mconfig.par
-	pargen --extmode --module-name MConfig --header-name mconfig mconfig.par
+	pargen --extmode --module-name MConfig --header-name mconfig $(srcdir)/mconfig.par
 
 mconfigincludedir = $(includedir)/mconfig-1.0/mconfig
 mconfiginclude_HEADERS =	\
