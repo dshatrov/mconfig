@@ -17,8 +17,8 @@
 */
 
 
-#ifndef __MCONFIG__CONFIG__H__
-#define __MCONFIG__CONFIG__H__
+#ifndef MCONFIG__CONFIG__H__
+#define MCONFIG__CONFIG__H__
 
 
 #include <libmary/libmary.h>
@@ -33,6 +33,56 @@ enum BooleanValue {
     Boolean_Default,
     Boolean_True,
     Boolean_False
+};
+
+class Attribute : public HashEntry<>
+{
+    friend class Section;
+    friend class Config;
+
+private:
+    Ref<String> name_str;
+    Ref<String> value_str;
+
+public:
+    bool hasValue () const
+    {
+        return value_str != NULL;
+    }
+
+    ConstMemory getName () const
+    {
+        if (!name_str)
+            return ConstMemory();
+
+        return name_str->mem();
+    }
+
+    ConstMemory getValue () const
+    {
+        if (!value_str)
+            return ConstMemory();
+
+        return value_str->mem();
+    }
+
+    void setValue (bool        const has_value,
+                   ConstMemory const value)
+    {
+        if (has_value)
+            value_str = grab (new String (value));
+        else
+            value_str = NULL;
+    }
+
+    Attribute (ConstMemory const name,
+               bool        const has_value,
+               ConstMemory const value)
+        : name_str  (grab (new String (name)))
+    {
+        if (has_value)
+            value_str = grab (new String (value));
+    }
 };
 
 class SectionEntry : public HashEntry<>
@@ -211,6 +261,18 @@ public:
 class Section : public SectionEntry
 {
 private:
+    typedef Hash< Attribute,
+                  Memory,
+                  MemberExtractor< Attribute,
+                                   Ref<String>,
+                                   &Attribute::name_str,
+                                   Memory,
+                                   AccessorExtractor< String,
+                                                      Memory,
+                                                      &String::mem > >,
+                  MemoryComparator<> >
+            AttributeHash;
+
     typedef Hash< SectionEntry,
 		  Memory,
 		  MemberExtractor< SectionEntry,
@@ -223,9 +285,12 @@ private:
 		  MemoryComparator<> >
 	    SectionEntryHash;
 
+    AttributeHash    attribute_hash;
     SectionEntryHash section_entry_hash;
 
 public:
+    Attribute* getAttribute (ConstMemory attr_name);
+
     SectionEntry* getSectionEntry (ConstMemory path,
 				   bool create = false,
 				   SectionEntry::Type section_entry_type = SectionEntry::Type_Invalid);
@@ -243,6 +308,9 @@ public:
 
     Section* getSection_nopath (ConstMemory section_name,
 				bool create = false);
+
+    // Takes ownership of @attribute.
+    void addAttribute (Attribute *attr);
 
     // Takes ownership of @option.
     void addOption (Option *option);
@@ -265,7 +333,8 @@ public:
 
     ~Section ();
 
-  // Iterators.
+
+  // __________________________________ iter ___________________________________
 
     class iter
     {
@@ -275,14 +344,8 @@ public:
 	SectionEntryHash::iter iter_;
 
     public:
-	iter ()
-	{
-	}
-
-	iter (Section &section)
-	    : iter_ (section.section_entry_hash)
-	{
-	}
+	iter (Section &section) : iter_ (section.section_entry_hash) {}
+	iter () {}
 
  	// Methods for C API binding.
 	void *getAsVoidPtr () const { return iter_.getAsVoidPtr(); }
@@ -308,6 +371,47 @@ public:
     {
 	return section_entry_hash.iter_done (iter.iter_);
     }
+
+
+  // ________________________________ iterator _________________________________
+
+    class iterator
+    {
+    private:
+        SectionEntryHash::iterator sect_iter;
+
+    public:
+        iterator (Section &section) : sect_iter (section.section_entry_hash) {}
+        iterator () {}
+
+        bool operator == (iterator const &iter) const { return sect_iter == iter.sect_iter; }
+        bool operator != (iterator const &iter) const { return sect_iter != iter.sect_iter; }
+
+        bool done () const { return sect_iter.done(); }
+        SectionEntry* next () { return sect_iter.next(); }
+    };
+
+
+  // ___________________________ attribute_iterator ____________________________
+
+    class attribute_iterator
+    {
+    private:
+        AttributeHash::iterator hash_iter;
+
+    public:
+        attribute_iterator (Section &section) : hash_iter (section.attribute_hash) {}
+        attribute_iterator () {}
+
+        bool operator == (attribute_iterator const &iter) const { return hash_iter == iter.hash_iter; }
+        bool operator != (attribute_iterator const &iter) const { return hash_iter != iter.hash_iter; }
+
+        bool done () const { return hash_iter.done(); }
+        Attribute* next () { return hash_iter.next(); }
+    };
+
+  // ___________________________________________________________________________
+
 };
 
 class GetResult
@@ -325,10 +429,72 @@ private:
     Value value;
 };
 
-class Config
+class Config : public Object
 {
+#if 0
 private:
+    StateMutex mutex;
+
+
+  // _____________________________ event_informer ______________________________
+
+public:
+    typedef Uint32 update_key;
+
+    struct Events
+    {
+        void (*configReload) (Config    *config,
+                              UpdateKey  update_key,
+                              void      *cb_data);
+    };
+
+private:
+    Informer_<Events> event_informer;
+
+    struct InformConfigReload_Data
+    {
+        Config *config;
+        UpdateKey update_key;
+    };
+
+    static void informConfigReload (Events * const events,
+                                    void   * const cb_data,
+                                    void   * const _config)
+    {
+        Config * const config = static_cast <Config*> (_config);
+        if (events->configReload)
+            events->configReload (config, cb_data);
+    }
+
+    void fireConfigReload () { event_informer.informAll (informConfigReload, /* data */); }
+
+public:
+    Informer_<Events>* getEventInformer () { return &event_informer; }
+
+
+  // ____________________________ config reloading _____________________________
+
+private:
+    Uint32 next_update_key;
+
+public:
+    // All nodes are marked as "not changed" (update key  increment).
+    // Original values are preserved for later comparison (copy-on-write).
+    mt_locks (update_mutex) void beginUpdate ();
+
+    // Update notification.
+    mt_unlocks (update_mutex) void endUpdate ();
+
+    mt_locks (update_mutex) void updateLock ();
+
+    mt_unlocks (update_mutex) void updateUnlock ();
+
+  // ___________________________________________________________________________
+#endif
+
+
     Section root_section;
+
 
 public:
     // Helper method to avoid excessive explicit calls to getRootSection().
@@ -382,7 +548,8 @@ public:
 	       unsigned      nest_level = 0);
 
     Config ()
-	: root_section ("root")
+        : // event_informer (this /* coderef_container */, &mutex),
+	  root_section ("root") 
     {
     }
 };
@@ -390,5 +557,5 @@ public:
 }
 
 
-#endif /* __MCONFIG__CONFIG__H__ */
+#endif /* MCONFIG__CONFIG__H__ */
 

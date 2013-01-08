@@ -17,7 +17,7 @@
 */
 
 
-#include <cctype>
+#include <mconfig/util.h>
 
 #include <mconfig/config.h>
 
@@ -127,33 +127,7 @@ Option::getBoolean ()
     if (getValue())
         value_mem = getValue()->mem();
 
-    if (value_mem.len() == 0)
-	return Boolean_Default;
-
-    Ref<String> value_str = grab (new String (value_mem));
-    Memory const mem = value_str->mem();
-    for (Size i = 0; i < mem.len(); ++i)
-	mem.mem() [i] = (Byte) tolower (mem.mem() [i]);
-
-    if (equal (mem, "y")    ||
-	equal (mem, "yes")  ||
-	equal (mem, "on")   ||
-	equal (mem, "true") ||
-	equal (mem, "1"))
-    {
-	return Boolean_True;
-    }
-
-    if (equal (mem, "n")     ||
-	equal (mem, "no")    ||
-	equal (mem, "off")   ||
-	equal (mem, "false") ||
-	equal (mem, "0"))
-    {
-	return Boolean_False;
-    }
-
-    return Boolean_Invalid;
+    return strToBoolean (value_mem);
 }
 
 SectionEntry*
@@ -185,6 +159,12 @@ Section::getSectionEntry (ConstMemory const path_,
 	return NULL;
 
     return section->getSectionEntry (path.region (delim - path.mem() + 1), create, section_entry_type);
+}
+
+Attribute*
+Section::getAttribute (ConstMemory const attr_name)
+{
+    return attribute_hash.lookup (attr_name);
 }
 
 Option*
@@ -265,6 +245,12 @@ Section::getSection_nopath (ConstMemory const section_name,
     }
 
     return static_cast <Section*> (section_entry);
+}
+
+void
+Section::addAttribute (Attribute * const attr)
+{
+    attribute_hash.add (attr);
 }
 
 void

@@ -1,5 +1,5 @@
 /*  MConfig - C++ library for working with configuration files
-    Copyright (C) 2011 Dmitry Shatrov
+    Copyright (C) 2011, 2012 Dmitry Shatrov
 
     This library is free software; you can redistribute it and/or
     modify it under the terms of the GNU Lesser General Public
@@ -17,11 +17,8 @@
 */
 
 
-#include <libmary/types.h>
+#include <libmary/libmary.h>
 #include <cctype>
-
-#include <mycpp/native_file.h>
-#include <mycpp/cached_file.h>
 
 #include <pargen/parser.h>
 
@@ -31,7 +28,6 @@
 #include <scruffy/checkpoint_tracker.h>
 
 #include <mconfig/mconfig_pargen.h>
-
 #include <mconfig/config_parser.h>
 
 
@@ -40,13 +36,13 @@ using namespace M;
 namespace MConfig {
 
 namespace {
-LogGroup libMary_logGroup_mconfig ("mconfig", LogLevel::N);
+LogGroup libMary_logGroup_mconfig ("mconfig", LogLevel::I);
 }
 
 class ConfigParser
 {
 public:
-    MyCpp::List<Section*> sections;
+    List<Section*> sections;
 
     Scruffy::CheckpointTracker checkpoint_tracker;
 
@@ -62,16 +58,16 @@ public:
 // included.
 //
 bool
-mconfig_word_token_match_func (MyCpp::ConstMemoryDesc const &token_mem,
+mconfig_word_token_match_func (ConstMemory const &token_mem,
 			       void * const /* token_user_ptr */,
 			       void * const /* user_data */)
 {
     logD (mconfig, _func, ConstMemory (token_mem));
 
-    if (token_mem.getLength() == 0)
+    if (token_mem.len() == 0)
 	return false;
 
-    char const *token = (char const*) token_mem.getMemory();
+    char const * const token = (char const*) token_mem.mem();
     if (token [0] == '{' ||
 	token [0] == '}' ||
 	token [0] == ',' ||
@@ -83,8 +79,8 @@ mconfig_word_token_match_func (MyCpp::ConstMemoryDesc const &token_mem,
     }
 
     if (token [0] == '"'
-	&& (token_mem.getLength() == 1
-	    || token [token_mem.getLength() - 1] != '"'))
+	&& (token_mem.len() == 1
+	    || token [token_mem.len() - 1] != '"'))
     {
 	return false;
     }
@@ -112,12 +108,12 @@ whitespaceBetweenWordsNeeded (ConstMemory const &left,
 }
 
 static Ref<String>
-wordsToString (MyCpp::List<MConfig_Word*> * const mt_nonnull words)
+wordsToString (List<MConfig_Word*> * const mt_nonnull words)
 {
     Size str_len = 0;
     {
 	ConstMemory prv_word;
-	MyCpp::List<MConfig_Word*>::DataIterator iter (*words);
+	List<MConfig_Word*>::DataIterator iter (*words);
 	while (!iter.done ()) {
 	    MConfig_Word * const word_ = iter.next();
 
@@ -144,7 +140,7 @@ wordsToString (MyCpp::List<MConfig_Word*> * const mt_nonnull words)
     {
 	Size pos = 0;
 	ConstMemory prv_word;
-	MyCpp::List<MConfig_Word*>::DataIterator iter (*words);
+	List<MConfig_Word*>::DataIterator iter (*words);
 	while (!iter.done ()) {
 	    MConfig_Word * const word_ = iter.next();
 
@@ -189,7 +185,8 @@ mconfig_begin_section (MConfig_Section       * const section,
 {
     ConfigParser * const self = static_cast <ConfigParser*> (_self);
 
-    Ref<String> section_name = keyToString (section->name);
+//    Ref<String> const section_name = keyToString (section->name);
+    ConstMemory const section_name = section->name ? ConstMemory (section->name->any_token->token) : ConstMemory();
 
     logD (mconfig, _func, "section: ", section_name);
 
@@ -198,13 +195,54 @@ mconfig_begin_section (MConfig_Section       * const section,
 //  Section *opts_section = self->sections.getLast()->getSection (section_name->mem());
     Section *opts_section = NULL;
     if (!opts_section) {
-	opts_section = new Section (keyToString (section->name)->mem());
+//	opts_section = new Section (keyToString (section->name)->mem());
+	opts_section = new Section (section_name);
 	self->sections.getLast()->addSection (opts_section);
+    }
+
+    {
+        List<MConfig_Attribute*>::iterator iter (section->attributes);
+        while (!iter.done()) {
+            MConfig_Attribute * const attr = iter.next()->data;
+
+            ConstMemory attr_name;
+            ConstMemory attr_value;
+            bool has_value = false;
+
+            switch (attr->attribute_type) {
+                case MConfig_Attribute::t_NameValue: {
+                    MConfig_Attribute_NameValue * const attr__name_value =
+                            static_cast <MConfig_Attribute_NameValue*> (attr);
+                    has_value = true;
+                    if (attr__name_value->name)
+                        attr_name = attr__name_value->name->any_token->token;
+                    if (attr__name_value->value)
+                        attr_value = attr__name_value->value->any_token->token;
+                } break;
+                case MConfig_Attribute::t_Name: {
+                    MConfig_Attribute_Name * const attr__name =
+                            static_cast <MConfig_Attribute_Name*> (attr);
+                    if (attr__name->name)
+                        attr_name = attr__name->name->any_token->token;
+                } break;
+                default:
+                    unreachable ();
+            }
+
+            Attribute *opts_attr = opts_section->getAttribute (attr_name);
+            if (opts_attr) {
+                opts_attr->setValue (has_value, attr_value);
+            } else {
+                opts_attr = new (std::nothrow) Attribute (attr_name, has_value, attr_value);
+                assert (opts_attr);
+                opts_section->addAttribute (opts_attr);
+            }
+        }
     }
 
     self->sections.append (opts_section);
     self->checkpoint_tracker.addUnconditionalCancellable (
-	    MyCpp::grab (new Scruffy::Cancellable_ListElement<Section*> (
+	    st_grab (new (std::nothrow) Scruffy::Cancellable_ListElement<Section*> (
 		    self->sections,
 		    self->sections.last)));
 
@@ -284,33 +322,38 @@ mconfig_accept_option (MConfig_Option         * const option,
     return true;
 }
 
-Result parseConfig (ConstMemory const &filename,
-		    Config * const config)
+Result parseConfig (ConstMemory   const filename,
+		    Config      * const config)
 {
     logD_ (_func, "filename: ", filename);
 
-    MyCpp::Ref<MyCpp::File> file;
-
 try {
-    MyCpp::Ref<Pargen::Grammar> const grammar = create_mconfig_grammar ();
+    StRef<Pargen::Grammar> const grammar = create_mconfig_grammar ();
 
-    file = MyCpp::File::createDefault (filename,
-				       0 /* open_flags */,
-				       MyCpp::AccessMode::ReadOnly);
-    file = MyCpp::grab (new MyCpp::CachedFile (file, (1 << 14) /* page_size */, 64 /* max_pages */));
+    NativeFile file;
+    if (!file.open (filename, 0 /* open_flags */, FileAccessMode::ReadOnly)) {
+        logE_ (_func, "Could not open ", filename, ": ", exc->toString());
+        return Result::Failure;
+    }
 
-    MyCpp::Ref<Scruffy::CppPreprocessor> const preprocessor = MyCpp::grab (new Scruffy::CppPreprocessor (file));
-    preprocessor->performPreprocessing ();
+//    file = MyCpp::grab (new MyCpp::CachedFile (file, (1 << 14) /* page_size */, 64 /* max_pages */));
 
-    MyCpp::Ref< MyCpp::List_< MyCpp::Ref<Scruffy::PpItem>, MyCpp::SimplyReferenced > > pp_items =
+    StRef<Scruffy::CppPreprocessor> const preprocessor = st_grab (new (std::nothrow) Scruffy::CppPreprocessor (&file));
+    if (!preprocessor->performPreprocessing ()) {
+        logE_ (_func, "Preprocessing failed: ", exc->toString());
+        return Result::Failure;
+    }
+
+    StRef< List_< StRef<Scruffy::PpItem>, StReferenced > > pp_items =
 	    preprocessor->getPpItems ();
 
-    MyCpp::Ref<Scruffy::PpItemStream> pp_stream =
-	    MyCpp::grab (static_cast <Scruffy::PpItemStream*> (
-		    new Scruffy::ListPpItemStream (pp_items->first, MyLang::FilePosition ())));
+    StRef<Scruffy::PpItemStream> pp_stream =
+	    st_grab (static_cast <Scruffy::PpItemStream*> (
+		    new (std::nothrow) Scruffy::ListPpItemStream (pp_items->first, Pargen::FilePosition ())));
 
-    MyCpp::Ref<Scruffy::PpItemStreamTokenStream> token_stream =
-	    MyCpp::grab (new Scruffy::PpItemStreamTokenStream (pp_stream));
+    Scruffy::PpItemStreamTokenStream token_stream_ (pp_stream);
+    Scruffy::PpItemStreamTokenStream * const token_stream = &token_stream_;
+
     token_stream->setNewlineReplacement (";");
 
     ConfigParser config_parser (config);
@@ -321,15 +364,21 @@ try {
 		   &config_parser,
 		   grammar,
 		   &mconfig_elem,
-		   MyCpp::ConstMemoryDesc::forString ("default"),
+		   "default",
 		   // TODO Set 'upwards_jumps' to true for non-AST mode.
 		   Pargen::createParserConfig (false /* upwards_jumps */),
 		   false /* debug_dump */);
 
-    file->close (true /* flush_data */);
+    file.close (true /* flush_data */);
+
+    ConstMemory token;
+    if (!token_stream->getNextToken (&token)) {
+        logE_ (_func, "Read error: ", exc->toString());
+        return Result::Failure;
+    }
 
     if (mconfig_elem == NULL ||
-	token_stream->getNextToken ().getLength () > 0)
+	token.len() > 0)
     {
 	logE_ (_func, "Syntax error in configuration file ", filename);
 	return Result::Failure;
@@ -337,20 +386,12 @@ try {
 
     if (logLevelOn (mconfig, LogLevel::Debug)) {
 	dump_mconfig_grammar (static_cast <MConfig_Grammar*> (mconfig_elem));
-	MyCpp::errf->pflush ();
+	errs->flush ();
     }
 
     return Result::Success;
 } catch (...) {
     logE_ (_func, "Exception");
-
-    if (file) {
-	try {
-	    file->close (true /* flush_data */);
-	} catch (...) {
-	}
-    }
-
     return Result::Failure;
 }
 }

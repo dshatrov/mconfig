@@ -17,8 +17,8 @@
 */
 
 
-#ifndef __MCONFIG__CONFIG_PARSER__H__
-#define __MCONFIG__CONFIG_PARSER__H__
+#ifndef MCONFIG__CONFIG_PARSER__H__
+#define MCONFIG__CONFIG_PARSER__H__
 
 
 #include <mconfig/config.h>
@@ -28,12 +28,11 @@ namespace MConfig {
 
 using namespace M;
 
-// TODO mt_throws?
-Result parseConfig (ConstMemory const &filename,
-		    Config *config);
+Result parseConfig (ConstMemory  filename,
+		    Config      *config);
 
 }
 
 
-#endif /* __MCONFIG__CONFIG_PARSER__H__ */
+#endif /* MCONFIG__CONFIG_PARSER__H__ */
 

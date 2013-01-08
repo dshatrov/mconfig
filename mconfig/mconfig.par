@@ -1,5 +1,5 @@
 #   MConfig - C++ library for working with configuration files
-#   Copyright (C) 2011 Dmitry Shatrov
+#   Copyright (C) 2011, 2012 Dmitry Shatrov
 #
 #   This library is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU Lesser General Public
@@ -26,9 +26,13 @@ value:
 key:
     word_seq
 
+attribute:
+    NameValue) <name> word [=] <value> word
+    Name)      <name> word
+
 option:
-    KeyValue) key [=] value [;] /mconfig_accept_option/
-    Key)      key [;] /!mconfig_accept_option/
+    KeyValue) key [=] value [;] / mconfig_accept_option/
+    Key)      key [;]           /!mconfig_accept_option/
     Newline)  [;]
 
 section-entry:
@@ -39,7 +43,7 @@ section-body:
     section-entry_opt_seq
 
 section:
-    <name> key_opt [{] /mconfig_begin_section/ section-body [}]
+    <name> word_opt attribute_opt_seq [{] /mconfig_begin_section/ section-body [}]
 
 *:
     section-entry_opt_seq
