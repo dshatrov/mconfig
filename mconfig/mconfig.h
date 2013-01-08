@@ -17,13 +17,18 @@
 */
 
 
-#ifndef __MCONFIG__MCONFIG__H__
-#define __MCONFIG__MCONFIG__H__
+#ifndef MCONFIG__MCONFIG__H__
+#define MCONFIG__MCONFIG__H__
 
+
+#include <mconfig/util.h>
 
 #include <mconfig/config.h>
 #include <mconfig/config_parser.h>
 
+#include <mconfig/varlist.h>
+#include <mconfig/varlist_parser.h>
 
-#endif /* __MCONFIG__MCONFIG__H__ */
+
+#endif /* MCONFIG__MCONFIG__H__ */
 

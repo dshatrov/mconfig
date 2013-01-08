@@ -16,25 +16,29 @@ INCLUDES = -I$(top_srcdir) -I$(top_builddir)
 
 mconfig_private_headers =
 
-# TODO There's no need to distribute mconfig_pargen.h
 mconfig_target_headers =	\
 	mconfig.h		\
+        util.h                  \
 	config.h		\
-	config_parser.h		\
-	mconfig_pargen.h
+	config_parser.h         \
+        varlist.h               \
+        varlist_parser.h
 
-MCONFIG_GENHEADERS =		\
-	mconfig_pargen.h
-MCONFIG_GENSOURCES =		\
-	mconfig_pargen.cpp
 MCONFIG_GENFILES =		\
-	$(MCONFIG_GENHEADERS)	\
-	$(MCONFIG_GENSOURCES)
-BUILT_SOURCES = mconfig_pargen.h
+	mconfig_pargen.h        \
+	mconfig_pargen.cpp      \
+        varlist_pargen.h        \
+        varlist_pargen.cpp
 CLEANFILES = $(MCONFIG_GENFILES)
+
+BUILT_SOURCES = mconfig_pargen.h        \
+                varlist_pargen.h
 
 mconfig_pargen.h mconfig_pargen.cpp: mconfig.par
 	pargen --extmode --module-name MConfig --header-name mconfig $(srcdir)/mconfig.par
+
+varlist_pargen.h varlist_pargen.cpp: varlist.par
+	pargen --extmode --module-name VarList --namespace MConfig --header-name varlist $(srcdir)/varlist.par
 
 mconfigincludedir = $(includedir)/mconfig-1.0/mconfig
 mconfiginclude_HEADERS =	\
@@ -43,11 +47,17 @@ mconfiginclude_HEADERS =	\
 lib_LTLIBRARIES = libmconfig-1.0.la
 libmconfig_1_0_la_SOURCES =		\
 	mconfig.cpp			\
+        util.cpp                        \
 	config.cpp			\
+        varlist.cpp                     \
 	config_parser.cpp		\
-	mconfig_pargen.cpp
+        varlist_parser.cpp              \
+	mconfig_pargen.cpp              \
+        varlist_pargen.cpp
 
-mconfig_extra_dist =
+mconfig_extra_dist =                    \
+	mconfig_pargen.h                \
+        varlist_pargen.h
 
 libmconfig_1_0_la_LDFLAGS = -no-undefined -version-info "0:0:0"
 libmconfig_1_0_la_LIBADD = $(THIS_LIBS)
