@@ -108,12 +108,12 @@ whitespaceBetweenWordsNeeded (ConstMemory const &left,
 }
 
 static Ref<String>
-wordsToString (List<MConfig_Word*> * const mt_nonnull words)
+wordsToString (IntrusiveList<MConfig_Word> * const mt_nonnull words)
 {
     Size str_len = 0;
     {
 	ConstMemory prv_word;
-	List<MConfig_Word*>::DataIterator iter (*words);
+	IntrusiveList<MConfig_Word>::iterator iter (*words);
 	while (!iter.done ()) {
 	    MConfig_Word * const word_ = iter.next();
 
@@ -140,7 +140,7 @@ wordsToString (List<MConfig_Word*> * const mt_nonnull words)
     {
 	Size pos = 0;
 	ConstMemory prv_word;
-	List<MConfig_Word*>::DataIterator iter (*words);
+	IntrusiveList<MConfig_Word>::iterator iter (*words);
 	while (!iter.done ()) {
 	    MConfig_Word * const word_ = iter.next();
 
@@ -201,9 +201,9 @@ mconfig_begin_section (MConfig_Section       * const section,
     }
 
     {
-        List<MConfig_Attribute*>::iterator iter (section->attributes);
+        IntrusiveList<MConfig_Attribute>::iterator iter (section->attributes);
         while (!iter.done()) {
-            MConfig_Attribute * const attr = iter.next()->data;
+            MConfig_Attribute * const attr = iter.next();
 
             ConstMemory attr_name;
             ConstMemory attr_value;

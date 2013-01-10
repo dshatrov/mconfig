@@ -182,7 +182,7 @@ Result VarlistParser::parseVarlist (ConstMemory   const filename,
                    &varlist_elem_container,
                    "default",
                    parser_config,
-                   true /* debug_dump */);
+                   false /* debug_dump */);
 
     delete[] buf;
     buf = NULL;
