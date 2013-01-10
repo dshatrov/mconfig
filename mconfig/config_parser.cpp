@@ -358,12 +358,14 @@ try {
 
     ConfigParser config_parser (config);
 
+    StRef<StReferenced> mconfig_elem_container;
     Pargen::ParserElement *mconfig_elem = NULL;
     Pargen::parse (token_stream,
 		   &config_parser.checkpoint_tracker,
 		   &config_parser,
 		   grammar,
 		   &mconfig_elem,
+                   &mconfig_elem_container,
 		   "default",
 		   // TODO Set 'upwards_jumps' to true for non-AST mode.
 		   Pargen::createParserConfig (false /* upwards_jumps */),
