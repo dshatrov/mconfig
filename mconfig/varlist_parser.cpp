@@ -19,9 +19,7 @@
 
 #include <libmary/libmary.h>
 
-//#include <mycpp/cached_file.h>
-
-#include <pargen/file_token_stream.h>
+#include <pargen/memory_token_stream.h>
 #include <pargen/parser.h>
 
 #include <mconfig/varlist_pargen.h>
@@ -118,6 +116,8 @@ varlist_accept_var_decl (VarList_VarDecl        * const var_decl,
 Result VarlistParser::parseVarlist (ConstMemory   const filename,
                                     Varlist     * const varlist)
 {
+    Byte *buf = NULL;
+
  try {
     NativeFile file;
     if (!file.open (filename, 0 /* open_flags */, FileAccessMode::ReadOnly)) {
@@ -125,24 +125,87 @@ Result VarlistParser::parseVarlist (ConstMemory   const filename,
         return Result::Failure;
     }
 
-//    file = grab (new MyCpp::CachedFile (file, (1 << 14) /* page_size */, 64 /* max_pages */));
+    ConstMemory mem;
+    {
+        FileStat fs;
+        if (!file.stat (&fs)) {
+            logE_ (_func, "NativeFile::stat() failed:\n", exc->backtrace());
+            return Result::Failure;
+        }
 
-    Pargen::FileTokenStream token_stream (&file);
+        Uint64 const limit = (1 << 22 /* 4 MB */);
+        if (fs.size > limit) {
+            logE_ (_func, "varlist file is too large: ", fs.size, " bytes (max ", limit, " bytes");
+            return Result::Failure;
+        }
 
+        if (fs.size == 0) {
+          // Nothing to read. This early return simplifies EOF handling.
+            return Result::Success;
+        }
+
+        buf = new (std::nothrow) Byte [fs.size];
+        assert (buf);
+
+        Size nread;
+        IoResult const res = file.readFull (Memory (buf, fs.size), &nread);
+        if (res == IoResult::Error) {
+            delete[] buf;
+            logE_ (_func, "varlist file read error:\n", exc->backtrace());
+            return Result::Failure;
+        }
+
+        if (nread != fs.size) {
+            logW_ (_func, "WARNING: read size (", nread, ") differs from stat size (", fs.size, ")");
+        }
+        assert (nread <= fs.size);
+
+        mem = ConstMemory (buf, nread);
+
+        logD_ (_func, "varlist file data:\n", mem, "\n");
+    }
+
+    Pargen::MemoryTokenStream token_stream;
+    token_stream.init (mem,
+                       true  /* report_newlines */,
+                       ";"   /* newline_replacement */,
+                       false /* minus_is_alpha */,
+                       4096  /* max_token_len */);
+
+    StRef<StReferenced> varlist_elem_container;
     Pargen::ParserElement *varlist_elem = NULL;
     Pargen::parse (&token_stream,
                    NULL /* lookup_data */,
                    varlist /* user_data */,
                    grammar,
                    &varlist_elem,
+                   &varlist_elem_container,
                    "default",
                    parser_config,
-                   false /* debug_dump */);
+                   true /* debug_dump */);
+
+    delete[] buf;
+    buf = NULL;
+
+    ConstMemory token;
+    if (!token_stream.getNextToken (&token)) {
+        logE_ (_func, "Read error: ", exc->toString());
+        return Result::Failure;
+    }
+
+    if (varlist_elem == NULL ||
+	token.len() > 0)
+    {
+	logE_ (_func, "Syntax error in configuration file ", filename);
+	return Result::Failure;
+    }
  } catch (...) {
+     delete[] buf;
      logE_ (_func, "parsing exception");
      return Result::Failure;
  }
 
+   delete[] buf;
    return Result::Success;
 }
 
