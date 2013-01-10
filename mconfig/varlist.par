@@ -24,9 +24,9 @@ section-specifier:
     Disable) [disable]
 
 var-decl:
+    Newline)   [;]
     NameValue) section-specifier_opt <name> word [=] <value> word [;]_opt / varlist_accept_var_decl/
     Name)      section-specifier_opt <name> word                  [;]_opt /!varlist_accept_var_decl/
-    Newline)   [;]
 
 *:
     var-decl_opt_seq
