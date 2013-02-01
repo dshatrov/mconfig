@@ -23,12 +23,14 @@
 
 #include <libmary/libmary.h>
 
+#include <mconfig/config.h>
+
 
 namespace MConfig {
 
 using namespace M;
 
-class Varlist
+class Varlist : public Object
 {
 public:
     class Var : public IntrusiveListElement<>
@@ -102,6 +104,9 @@ public:
 
     ~Varlist ();
 };
+
+void parseVarlistSection (MConfig::Section * mt_nonnull section,
+                          MConfig::Varlist * mt_nonnull varlist);
 
 }
 
