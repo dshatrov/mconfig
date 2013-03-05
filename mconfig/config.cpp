@@ -368,7 +368,7 @@ Option::dump (OutputStream * const outs,
     Option * const option = this;
 
     dumpTab (outs, nest_level);
-    outs->print ("\"", option->getName (), "\" = ");
+    outs->print (option->getName (), " = ");
 
     Option::iter iter (*option);
     while (!option->iter_done (iter)) {
@@ -388,7 +388,7 @@ Section::dump (OutputStream * const outs,
     Section * const section = this;
 
     dumpTab (outs, nest_level);
-    outs->print ("\"", section->getName(), "\" {\n");
+    outs->print (section->getName(), " {\n");
 
     dumpBody (outs, nest_level + 1);
 

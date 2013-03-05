@@ -35,9 +35,7 @@ using namespace M;
 
 namespace MConfig {
 
-namespace {
-LogGroup libMary_logGroup_mconfig ("mconfig", LogLevel::I);
-}
+static LogGroup libMary_logGroup_mconfig ("mconfig", LogLevel::I);
 
 class ConfigParser
 {
