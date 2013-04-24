@@ -5,8 +5,8 @@ COMMON_CFLAGS =			\
 
 if !PLATFORM_WIN32
     COMMON_CFLAGS += -pthread
-    # For backtraces
-    COMMON_CFLAGS += -rdynamic
+#    # For backtraces
+#    COMMON_CFLAGS += -rdynamic
 endif
 
 AM_CFLAGS   += -std=gnu99 $(COMMON_CFLAGS)
