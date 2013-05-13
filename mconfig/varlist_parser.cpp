@@ -121,7 +121,7 @@ Result VarlistParser::parseVarlist (ConstMemory   const filename,
  try {
     NativeFile file;
     if (!file.open (filename, 0 /* open_flags */, FileAccessMode::ReadOnly)) {
-        logE_ (_func, "Could not open ", filename, ": ", exc->toString());
+        logD_ (_func, "Could not open ", filename, ": ", exc->toString());
         return Result::Failure;
     }
 
