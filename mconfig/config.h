@@ -100,19 +100,11 @@ public:
 
 private:
     Ref<String> name_str;
-
     Type const type;
 
 public:
-    Type getType () const
-    {
-	return type;
-    }
-
-    ConstMemory getName () const
-    {
-	return name_str->mem();
-    }
+    Type        getType () const { return type; }
+    ConstMemory getName () const { return name_str->mem(); }
 
     SectionEntry (Type        const type,
 		  ConstMemory const entry_name)
@@ -358,19 +350,13 @@ public:
     };
 
     void iter_begin (iter &iter)
-    {
-	section_entry_hash.iter_begin (iter.iter_);
-    }
+        { section_entry_hash.iter_begin (iter.iter_); }
 
     SectionEntry* iter_next (iter &iter)
-    {
-	return section_entry_hash.iter_next (iter.iter_);
-    }
+        { return section_entry_hash.iter_next (iter.iter_); }
 
     bool iter_done (iter &iter)
-    {
-	return section_entry_hash.iter_done (iter.iter_);
-    }
+        { return section_entry_hash.iter_done (iter.iter_); }
 
 
   // ________________________________ iterator _________________________________

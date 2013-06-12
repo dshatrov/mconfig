@@ -388,7 +388,10 @@ Section::dump (OutputStream * const outs,
     Section * const section = this;
 
     dumpTab (outs, nest_level);
-    outs->print (section->getName(), " {\n");
+    if (section->getName().len())
+        outs->print (section->getName(), " {\n");
+    else
+        outs->print ("{\n");
 
     dumpBody (outs, nest_level + 1);
 
